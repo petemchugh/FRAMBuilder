@@ -110,14 +110,14 @@ Public Class form_ViewCodes
 
 
         If OOB = False Then
-            sql = _
-              "SELECT FRAM_Stocks.FRAM_StockID, FRAM_Stocks.Stock, WireTagCode.BroodYear, FRAM_Stocks.FRAM_StockLongName, " & _
-                 "FRAM_Stocks.Description, WireTagCode.TagCode, WireTagCode.Run, RelLoc.release_location_name, WireTagCode.FirstReleaseDate, WireTagCode.CWTMark1, " & _
-                 "WireTagCode.CWTMark1Count, WireTagCode.CWTMark2, WireTagCode.CWTMark2Count " & _
-              "FROM FRAM_Stocks INNER JOIN (WireTagCode INNER JOIN RelLoc ON WireTagCode.ReleaseSite = RelLoc.release_location_code) " & _
-              "ON FRAM_Stocks.FineStock = WireTagCode.Stock " & _
-              "WHERE (((WireTagCode.BroodYear)" & ChooseBY & ") AND ((WireTagCode.CWTMark1)='5000' OR (WireTagCode.CWTMark1)='5500' OR (WireTagCode.CWTMark1)='5205') AND ((FRAM_Stocks.Include)=True)) " & _
-              "ORDER BY FRAM_Stocks.FRAM_StockID, WireTagCode.BroodYear, FRAM_Stocks.FRAM_StockLongName, WireTagCode.TagCode"
+   sql = _
+     "SELECT FRAM_Stocks.FRAM_StockID, FRAM_Stocks.Stock, WireTagCode.BroodYear, FRAM_Stocks.FRAM_StockLongName, " & _
+        "FRAM_Stocks.Description, WireTagCode.TagCode, WireTagCode.Run, RelLoc.release_location_name, WireTagCode.FirstReleaseDate, WireTagCode.CWTMark1, " & _
+        "WireTagCode.CWTMark1Count, WireTagCode.CWTMark2, WireTagCode.CWTMark2Count " & _
+     "FROM FRAM_Stocks INNER JOIN (WireTagCode INNER JOIN RelLoc ON WireTagCode.ReleaseSite = RelLoc.release_location_code) " & _
+     "ON FRAM_Stocks.FineStock = WireTagCode.Stock " & _
+     "WHERE (((WireTagCode.BroodYear)" & ChooseBY & ") AND ((WireTagCode.FRAM_OOB) = FALSE) AND ((WireTagCode.CWTMark1)='5000' OR (WireTagCode.CWTMark1)='5500' OR (WireTagCode.CWTMark1)='5205') AND ((FRAM_Stocks.Include)=True)) " & _
+     "ORDER BY FRAM_Stocks.FRAM_StockID, WireTagCode.BroodYear, FRAM_Stocks.FRAM_StockLongName, WireTagCode.TagCode"
         ElseIf OOB = True Then
             sql = _
               "SELECT FRAM_Stocks.FRAM_StockID, FRAM_Stocks.Stock, WireTagCode.BroodYear, FRAM_Stocks.FRAM_StockLongName, " & _

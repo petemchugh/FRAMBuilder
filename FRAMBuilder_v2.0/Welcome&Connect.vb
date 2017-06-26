@@ -103,6 +103,18 @@ Public Class form_WelcomeAndConnect
             MsgBox("Failed to load PS FW Sport Adjustments!" & vbCr & "Verify that your database contains this table and try again.")
         End Try
 
+        sql = "SELECT * FROM FRAM_SizeLimits"
+
+        Try
+            CWTdb.Open()
+            oledbAdapter = New OleDb.OleDbDataAdapter(sql, CWTdb)
+            oledbAdapter.Fill(dtSizeLimits)
+            oledbAdapter.Dispose()
+            CWTdb.Close()
+
+        Catch ex As Exception
+            MsgBox("Failed to load Size Limits!" & vbCr & "Verify that your database contains this table and try again.")
+        End Try
 
         '-----------------------------------------------------------------------------
 

@@ -1810,8 +1810,10 @@ SkipRecord:     'Place to go to after printing reject record to move on to next 
             If ck_bnBroodWt.Checked = True Then 'Get rules and weights from the db
                     Dim exp As String
                     Dim z As Integer
-                    For z = 0 To nbys
-                        exp = "(Stock = '" & stk & "') AND (BroodYear = " & bylisty(z) & ")"
+                For z = 0 To nbys
+                    exp = "(Stock = '" & stk & "') AND (BroodYear = " & bylisty(z) & ")"
+
+                    Try
                         If ((IsDBNull(dtWeights.Select(exp)) = True) Or (dtWeights.Select(exp)(0)("bnBYmeth") = 2)) Then
                             BYmergeRule = 2 'Stays 2
                             GoTo MoveOn
@@ -1822,7 +1824,11 @@ SkipRecord:     'Place to go to after printing reject record to move on to next 
                             bywts(z) = dtWeights.Select(exp)(0)("bnBYwt")
                             BYmergeRule = 3
                         End If
-                    Next
+                    Catch ex As Exception
+                        GoTo MoveOn
+                    End Try
+
+                Next
             End If
 MoveOn:
             If BYmergeRule = 2 Then 'Compute recoveries-weighted weights

@@ -1069,7 +1069,7 @@ Here:
                                 If FL < Limit Then
                                     FLwarn = FLwarn & "*** FL lower than limit"
                                 End If
-                                If FL < (Limit - 18) And (fram_match < 30 Or fram_match > 35) Then
+                                If FL < (Limit - 18) And (fram_match < 30 Or fram_match > 35) Then 'Already excluding escapement, this excludes SOF fisheries
                                     SublegExclude = True
                                 End If
 

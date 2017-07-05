@@ -592,6 +592,11 @@ Here:
             For l = cwtsubset.GetLowerBound(0) To cwtsubset.GetUpperBound(0)
                 Dim RecId As String
                 RecId = cwtsubset(l)("RecoveryId").ToString
+
+                If RecId = "1998232" Then
+                    RecId = RecId
+                End If
+
                 Dim AgeFlag As Boolean = False 'Flags for warning that age in length file is fudged to meet FRAM restrictions
                 Dim TSFlag As Boolean = False 'Flags for warning that TS in length file is fudged to meet FRAM restrictions
                 'Dim DetailString As String 'String for passing info to LengthWrite Sub
@@ -1021,7 +1026,7 @@ Here:
                                 Dim FLwarn, MeasMeth As String
                                 Dim FLconv As Boolean = False 'Booleans indicating conversion occurred
                                 Dim Limit, Length As Double 'Actual size limit in the fishery/time step when/where the CWT was recovered
-                                Dim expy As String = "(FishingYear = " & cwtsubset(l)("RunYear") & ") AND (FisheryID = " & fram_match & ") AND (TimeStep = " & tscalc & ")"
+                                Dim expy As String = "(FishingYear = 2010) AND (FisheryID = " & fram_match & ") AND (TimeStep = " & tscalc & ")"
                                 Dim LengthMeth As Integer = cwtsubset(l)("LengthCode")
                                 Dim agedays As Integer
                                 Dim reldate As DateTime
@@ -1064,7 +1069,7 @@ Here:
                                 If FL < Limit Then
                                     FLwarn = FLwarn & "*** FL lower than limit"
                                 End If
-                                If FL < (Limit - 18) Then
+                                If FL < (Limit - 18) And (fram_match < 30 Or fram_match > 35) Then 'Already excluding escapement, this excludes SOF fisheries
                                     SublegExclude = True
                                 End If
 

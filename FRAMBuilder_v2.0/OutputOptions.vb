@@ -135,10 +135,10 @@ Public Class form_OutputOptions
           'Read in the data and fill the VB DataSet
           Try
               CWTdb.Open()
-              Sql = "SELECT * FROM(FRAM_SizeLimits)" 'WHERE " & codestring
-              oledbAdapter = New OleDb.OleDbDataAdapter(Sql, CWTdb)
-              oledbAdapter.Fill(dtSizeLimits)
-              oledbAdapter.Dispose()
+                'Sql = "SELECT * FROM(FRAM_SizeLimits)" 'WHERE " & codestring
+                'oledbAdapter = New OleDb.OleDbDataAdapter(Sql, CWTdb)
+                'oledbAdapter.Fill(dtSizeLimits)
+                'oledbAdapter.Dispose()
               Sql = "SELECT * FROM(MarkType)" 'WHERE " & codestring
               oledbAdapter = New OleDb.OleDbDataAdapter(Sql, CWTdb)
               oledbAdapter.Fill(dtMarkType)
@@ -592,6 +592,11 @@ Here:
             For l = cwtsubset.GetLowerBound(0) To cwtsubset.GetUpperBound(0)
                 Dim RecId As String
                 RecId = cwtsubset(l)("RecoveryId").ToString
+
+                If RecId = "1998232" Then
+                    RecId = RecId
+                End If
+
                 Dim AgeFlag As Boolean = False 'Flags for warning that age in length file is fudged to meet FRAM restrictions
                 Dim TSFlag As Boolean = False 'Flags for warning that TS in length file is fudged to meet FRAM restrictions
                 'Dim DetailString As String 'String for passing info to LengthWrite Sub
@@ -1001,15 +1006,16 @@ Here:
                         '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
                         '*****************************************************************************************
+                        ' Begin code for processing length data and filtering out sublegal recoveries
                         '*****************************************************************************************
-                        'Code for processing length data for analysis
+                        Dim SublegExclude As Boolean = False 'Variable to identify sublegal recoveries that should be excluded
 
-                        If ((ck_LengthOnly.Checked = True Or ck_LengthToo.Checked = True) And (fram_match < 74) And (IsDBNull(cwtsubset(l)("LengthCode")) = False)) Then
+                        If ((fram_match < 74) And (IsDBNull(cwtsubset(l)("LengthCode")) = False)) Then
                             'Some preparations for things to chuck into the length file subroutine
                             If (cwtsubset(l)("LengthCode") = 0 Or cwtsubset(l)("LengthCode") = 1 Or cwtsubset(l)("LengthCode") = 3) Then
                                 ''Pass info to length subroutine so that it can be stored..
                                 'DetailString = "INSERT INTO FRAM_GrowthData ([RecoveryId],[RunID],[StockNum],[StockAbbrev],[StockName],[CWTCode],[RunTiming],[RunYear],[BroodYear],[Age],[FisheryNum],[FisheryName],[TStepNum],[TStepName],[RecoverySite],[RecoveryDate],[SizeLimit],[ForkLength],[Convert],[MeasMeth],[AgeFlag],[TSFlag],[Comments]) VALUES ("
-                                fishname = dsFRAMlist.Tables(0).Select()(fram_match - 1)("FisheryName").ToString
+                                'fishname = dsFRAMlist.Tables(0).Select()(fram_match - 1)("FisheryName").ToString
                                 'DetailString = DetailString & "'" & RecId & "', " & runID & ", " & FRAMnum & ", '" & stk & "', '" & FRAMname & "', '"
                                 'DetailString = DetailString & code & "', " & runtiming & ", " & cwtsubset(l)("RunYear") & ", " & brood & ", "
                                 'DetailString = DetailString & agecalc & ", " & fram_match & ", '" & fishname & "', "
@@ -1020,7 +1026,7 @@ Here:
                                 Dim FLwarn, MeasMeth As String
                                 Dim FLconv As Boolean = False 'Booleans indicating conversion occurred
                                 Dim Limit, Length As Double 'Actual size limit in the fishery/time step when/where the CWT was recovered
-                                Dim expy As String = "(FishingYear = " & cwtsubset(l)("RunYear") & ") AND (FisheryID = " & fram_match & ") AND (TimeStep = " & tscalc & ")"
+                                Dim expy As String = "(FishingYear = 2010) AND (FisheryID = " & fram_match & ") AND (TimeStep = " & tscalc & ")"
                                 Dim LengthMeth As Integer = cwtsubset(l)("LengthCode")
                                 Dim agedays As Integer
                                 Dim reldate As DateTime
@@ -1063,41 +1069,63 @@ Here:
                                 If FL < Limit Then
                                     FLwarn = FLwarn & "*** FL lower than limit"
                                 End If
-
-                                reldate = dsWireTagCodemerge.Tables(0).Select("TagCode = '" & code & "'")(0)("FirstReleaseDate")
-                                agedays = (cwtsubset(l)("RecoveryDate") - dsWireTagCodemerge.Tables(0).Select("TagCode = '" & code & "'")(0)("FirstReleaseDate")).Days
-                                Dim myDateTime2 As New DateTime(dsWireTagCodemerge.Tables(0).Select("TagCode = '" & code & "'")(0)("BroodYear"), 10, 1)
-                                agemonths = DateDiff(DateInterval.Month, myDateTime2, cwtsubset(l)("RecoveryDate"))
-
-                                mark = dtMarkType.Select("Code =" & cwtsubset(l)("RecordedMark"))(0)("Description")
-                                markrel = dsWireTagCodemerge.Tables(0).Select("TagCode = '" & code & "'")(0)("CWTMark1")
-                                markrel = dtMarkType.Select("Code =" & markrel)(0)("Description")
-                                fishtype = "Preterm"
-                                If dsFRAMlist.Tables(0).Select("FishID = " & fram_match)(0)(tscalcFL + 2) = True Then
-                                    fishtype = "Term"
+                                If FL < (Limit - 18) And (fram_match < 30 Or fram_match > 35) Then 'Already excluding escapement, this excludes SOF fisheries
+                                    SublegExclude = True
                                 End If
 
+                                If ck_LengthOnly.Checked = True Or ck_LengthToo.Checked = True Then
+                                    reldate = dsWireTagCodemerge.Tables(0).Select("TagCode = '" & code & "'")(0)("FirstReleaseDate")
+                                    agedays = (cwtsubset(l)("RecoveryDate") - dsWireTagCodemerge.Tables(0).Select("TagCode = '" & code & "'")(0)("FirstReleaseDate")).Days
+                                    Dim myDateTime2 As New DateTime(dsWireTagCodemerge.Tables(0).Select("TagCode = '" & code & "'")(0)("BroodYear"), 10, 1)
+                                    agemonths = DateDiff(DateInterval.Month, myDateTime2, cwtsubset(l)("RecoveryDate"))
 
-                                dtLengthOut.Tables(0).Rows.Add(RecId, runID, FRAMnum, stk, FRAMname, code, runtiming, cwtsubset(l)("RunYear"), brood, agecalcFL, fram_match, fishname, tscalcFL, _
-                                    TSNames(tscalcFL - 1), cwtsubset(l)("RecoverySite"), cwtsubset(l)("RecoveryDate"), Limit, FL, _
-                                    reldate, agedays, agemonths, mark, markrel, fishtype, FLconv, MeasMeth, AgeFlag, TSFlag, FLwarn)
+                                    mark = dtMarkType.Select("Code =" & cwtsubset(l)("RecordedMark"))(0)("Description")
+                                    markrel = dsWireTagCodemerge.Tables(0).Select("TagCode = '" & code & "'")(0)("CWTMark1")
+                                    markrel = dtMarkType.Select("Code =" & markrel)(0)("Description")
+                                    fishtype = "Preterm"
+                                    If dsFRAMlist.Tables(0).Select("FishID = " & fram_match)(0)(tscalcFL + 2) = True Then
+                                        fishtype = "Term"
+                                    End If
 
+                                    dtLengthOut.Tables(0).Rows.Add(RecId, runID, FRAMnum, stk, FRAMname, code, runtiming, cwtsubset(l)("RunYear"), brood, agecalcFL, fram_match, fishname, tscalcFL, _
+                                        TSNames(tscalcFL - 1), cwtsubset(l)("RecoverySite"), cwtsubset(l)("RecoveryDate"), Limit, FL, _
+                                        reldate, agedays, agemonths, mark, markrel, fishtype, FLconv, MeasMeth, AgeFlag, TSFlag, FLwarn)
+                                End If
                             End If
                         End If
 
 
                         'Console.Write("Age = " & agecalc & " Fish = " & fram_match & " Time step = " & tscalc & " CWT out N = " & cwtsubset(l)("AdjustedEstimatedNumber").ToString & vbCrLf)
 
+                        '*****************************************************************************************
+                        'End code for processing length data and filtering out sublegal recoveries
+                        '*****************************************************************************************
 
-                        '***Storage and Summation**********************************************************************
+
+                        '*****************************************************************************************
+                        'Begin storage and summation
+                        '*****************************************************************************************
                         'Given the fishery, age, TS combination, store the associated estimated value of recoveries
-                        CWTout(agecalc - 2, fram_match - 1, tscalc - 1) += cwtsubset(l)("AdjustedEstimatedNumber")
+                        If SublegExclude = False Then
+                            CWTout(agecalc - 2, fram_match - 1, tscalc - 1) += cwtsubset(l)("AdjustedEstimatedNumber")
 
-                        'Track number of records to approximate tags in hand
-                        If cwtsubset(l)("AdjustedEstimatedNumber") > 0 Then
-                            CWToutN(agecalc - 2, fram_match - 1, tscalc - 1) += 1
+                            'Track number of records to approximate tags in hand
+                            If cwtsubset(l)("AdjustedEstimatedNumber") > 0 Then
+                                CWToutN(agecalc - 2, fram_match - 1, tscalc - 1) += 1
+                            End If
+                        Else 'If SublegExclude = True...
+                            stringier = ""
+                            stringier = String.Join(",", cwtsubset(l).ItemArray.Select(Function(s) s.ToString).ToArray) 'Shorthand notation for writing a single row to file
+                            'CWTbad.AppendLine(stringier)
+                            'CWTlog.AppendLine("Record Rejected:   " & stringier)
+
+                            note = "Record Rejected - Sublegal Recovery:  " & stringier
+                            dtProcessOut.Tables(0).Rows.Add(runID, stk, code, RecId, note)
                         End If
-                        '***Storage and Summation**********************************************************************
+
+                        '*****************************************************************************************
+                        'End storage and summation
+                        '*****************************************************************************************
 
                     Else 'If no match found...
 
@@ -1810,8 +1838,10 @@ SkipRecord:     'Place to go to after printing reject record to move on to next 
             If ck_bnBroodWt.Checked = True Then 'Get rules and weights from the db
                     Dim exp As String
                     Dim z As Integer
-                    For z = 0 To nbys
-                        exp = "(Stock = '" & stk & "') AND (BroodYear = " & bylisty(z) & ")"
+                For z = 0 To nbys
+                    exp = "(Stock = '" & stk & "') AND (BroodYear = " & bylisty(z) & ")"
+
+                    Try
                         If ((IsDBNull(dtWeights.Select(exp)) = True) Or (dtWeights.Select(exp)(0)("bnBYmeth") = 2)) Then
                             BYmergeRule = 2 'Stays 2
                             GoTo MoveOn
@@ -1822,7 +1852,11 @@ SkipRecord:     'Place to go to after printing reject record to move on to next 
                             bywts(z) = dtWeights.Select(exp)(0)("bnBYwt")
                             BYmergeRule = 3
                         End If
-                    Next
+                    Catch ex As Exception
+                        GoTo MoveOn
+                    End Try
+
+                Next
             End If
 MoveOn:
             If BYmergeRule = 2 Then 'Compute recoveries-weighted weights
